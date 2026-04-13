@@ -11,3 +11,80 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Role {
+  id        Int     @id @default(autoincrement())
+  name      String
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  active    Boolean  @default(true)
+
+  // Relations
+  users User[]
+
+  @@map("roles")
+}
+
+model Tag {
+  id        Int     @id @default(autoincrement())
+  name      String
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  active    Boolean  @default(true)
+
+  // Relations
+  posts PostTag[]
+
+  @@map("tags")
+}
+
+model User {
+  id          Int     @id @default(autoincrement())
+  name        String
+  email       String  @unique
+  password    String
+  idRole      Int?
+  searchArea  String?
+  subjects    String?
+  showUser    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  active      Boolean  @default(true)
+
+  // Relations
+  role  Role?       @relation(fields: [idRole], references: [id])
+  posts Post[]
+
+  @@map("users")
+}
+
+model Post {
+  id        Int     @id @default(autoincrement())
+  title     String
+  content   String
+  userId    Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  active    Boolean  @default(true)
+
+  // Relations
+  user User?       @relation(fields: [userId], references: [id])
+  tags PostTag[]
+
+  @@map("posts")
+}
+
+// Junction table for Post-Tag many-to-many relationship
+model PostTag {
+  id    Int @id @default(autoincrement())
+  postId Int
+  tagId  Int
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, tagId])
+  @@map("post_tags")
+}
