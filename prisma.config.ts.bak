@@ -1,0 +1,3 @@
+// Database URL is configured via the DATABASE_URL environment variable
+// loaded by dotenv in main.ts and set in the Prisma schema datasource block
+export default {};
