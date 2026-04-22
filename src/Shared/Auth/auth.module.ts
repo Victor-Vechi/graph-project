@@ -1,9 +1,8 @@
 import { Global, Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { JwtAuthService } from './jwt.service';
-import { CaptchaService } from './captcha.service';
-import { JwtAuthGuard } from './jwt-auth.guard';
-import { AdminGuard } from './admin.guard';
+import { JwtAuthService } from './application/jwt.service';
+import { JwtAuthGuard } from './infra/jwt-auth.guard';
+import { AdminGuard } from './infra/admin.guard';
 
 @Global()
 @Module({
@@ -15,7 +14,7 @@ import { AdminGuard } from './admin.guard';
             }),
         }),
     ],
-    providers: [JwtAuthService, CaptchaService, JwtAuthGuard, AdminGuard],
-    exports: [JwtModule, JwtAuthService, CaptchaService, JwtAuthGuard, AdminGuard],
+    providers: [JwtAuthService, JwtAuthGuard, AdminGuard],
+    exports: [JwtModule, JwtAuthService, JwtAuthGuard, AdminGuard],
 })
 export class AuthModule {}
