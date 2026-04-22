@@ -3,12 +3,11 @@ import type { Response } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { UserService } from '../application/user.service';
 import { RoleService } from '../../Role/application/role.service';
-import { JwtAuthService } from '../../Shared/Auth/jwt.service';
-import type { JwtPayload } from '../../Shared/Auth/jwt.service';
-import { CaptchaService } from '../../Shared/Auth/captcha.service';
-import { JwtAuthGuard } from '../../Shared/Auth/jwt-auth.guard';
-import { AdminGuard } from '../../Shared/Auth/admin.guard';
-import { CurrentUser } from '../../Shared/Auth/current-user.decorator';
+import { JwtAuthService } from '../../Shared/Auth/application/jwt.service';
+import type { JwtPayload } from '../../Shared/Auth/domain/jwt.interface';
+import { JwtAuthGuard } from '../../Shared/Auth/infra/jwt-auth.guard';
+import { AdminGuard } from '../../Shared/Auth/infra/admin.guard';
+import { CurrentUser } from '../../Shared/Auth/infra/current-user.decorator';
 
 @Controller('api')
 export class UserController {
@@ -16,7 +15,6 @@ export class UserController {
         private readonly userService: UserService,
         private readonly roleService: RoleService,
         private readonly jwtAuthService: JwtAuthService,
-        private readonly captchaService: CaptchaService,
     ) {}
 
     @Post('user/register')
@@ -37,14 +35,7 @@ export class UserController {
     @Throttle({ default: { limit: 20, ttl: 900000 } })
     async login(@Body() body: any, @Res() res: Response) {
         try {
-            const { captchaToken, ...data } = body;
-
-            const captchaValid = await this.captchaService.verify(captchaToken);
-            if (!captchaValid) {
-                return res.status(HttpStatus.BAD_REQUEST).json({ error: 'CAPTCHA inválido ou expirado' });
-            }
-
-            const response = await this.userService.login(data);
+            const response = await this.userService.login(body);
             return response?.token
                 ? res.status(HttpStatus.OK).json({ message: 'User logged in successfully', response })
                 : res.status(HttpStatus.BAD_REQUEST).json({ error: 'Invalid Login' });
