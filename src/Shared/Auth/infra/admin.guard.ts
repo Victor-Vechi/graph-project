@@ -15,8 +15,9 @@ export class AdminGuard implements CanActivate {
         }
 
         try {
-            const payload: any = this.jwtService.verify(token);
-            if (payload.cargo !== 'admin') {
+            this.jwtService.verify(token)
+            const payload: any = this.jwtService.decode(token);
+            if (payload.cargo.toLowerCase() !== 'admin') {
                 throw new UnauthorizedException({ error: 'Unauthorized', code: 'invalid_token' });
             }
             request['user'] = payload;
