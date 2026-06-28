@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import bcrypt from 'bcrypt';
 import { UserRepository } from '../infra/user.repository';
 import { RoleService } from '../../Role/application/role.service';
-import { JwtAuthService } from '../../Shared/Auth/jwt.service';
+import { JwtAuthService } from '../../Shared/Auth/application/jwt.service';
 import { UserAdapted, UserEntity, UserShowAdapted } from '../domain/user.entity';
 
 @Injectable()

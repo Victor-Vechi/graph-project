@@ -1,7 +1,7 @@
 import { Controller, Post, Get, Put, Delete, Param, Body, UseGuards, Res, HttpStatus } from '@nestjs/common';
 import type { Response } from 'express';
 import { RoleService } from '../application/role.service';
-import { AdminGuard } from '../../Shared/Auth/admin.guard';
+import { AdminGuard } from '../../Shared/Auth/infra/admin.guard';
 
 @Controller('api/roles')
 export class RoleController {

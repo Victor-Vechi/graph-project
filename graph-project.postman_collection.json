@@ -1,0 +1,446 @@
+{
+  "info": {
+    "name": "Graph Project API",
+    "description": "Collection das rotas da API do Grupo de Pesquisa em Teoria dos Grafos (NestJS + Prisma + PostgreSQL).\n\nVariáveis de ambiente:\n- baseUrl: ex. http://localhost:3000\n- token: access token JWT (preenchido após login)\n- refreshToken: refresh token JWT (preenchido após login)\n- adminToken: token de um usuário com cargo 'admin' para rotas protegidas por AdminGuard",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "token", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "adminToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "User",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"senha123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "login"]
+            },
+            "description": "Autentica o usuário e retorna `token` (access, 2h) e `refreshToken` (7d). Rate limit: 20 req / 15 min."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.response) {",
+                  "  if (json.response.token) pm.collectionVariables.set('token', json.response.token);",
+                  "  if (json.response.refreshToken) pm.collectionVariables.set('refreshToken', json.response.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Novo Usuário\",\n  \"email\": \"novo@example.com\",\n  \"password\": \"senha123\",\n  \"idRole\": 2,\n  \"searchArea\": \"Teoria dos Grafos\",\n  \"subjects\": \"Algoritmos, Otimização\",\n  \"showUser\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "register"]
+            },
+            "description": "Cria usuário. Requer AdminGuard. Rate limit: 3 req / hora."
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/refresh-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "refresh-token"]
+            },
+            "description": "Renova o access token a partir do refresh token."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.token) pm.collectionVariables.set('token', json.token);",
+                  "if (json && json.refreshToken) pm.collectionVariables.set('refreshToken', json.refreshToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get User by ID (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/info/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "info", "1"]
+            },
+            "description": "Busca usuário por ID. Requer AdminGuard."
+          }
+        },
+        {
+          "name": "List All Users (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users"]
+            },
+            "description": "Lista todos os usuários. Requer AdminGuard."
+          }
+        },
+        {
+          "name": "User Details (Logged)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/details",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "details"]
+            },
+            "description": "Retorna dados do usuário autenticado a partir do payload do JWT."
+          }
+        },
+        {
+          "name": "Public Users (Show)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/show",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "show"]
+            },
+            "description": "Lista pública de usuários com showUser=true (para exibição no site)."
+          }
+        },
+        {
+          "name": "Recover Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"senha123\",\n  \"newPassword\": \"novaSenha456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/recover",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "recover"]
+            },
+            "description": "Atualiza a senha do usuário autenticado. Rate limit: 3 req / hora."
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Novo Nome\",\n  \"email\": \"atualizado@example.com\",\n  \"searchArea\": \"Algoritmos em Grafos\",\n  \"subjects\": \"Coloração, Caminhos\",\n  \"showUser\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/update",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "update"]
+            },
+            "description": "Atualiza dados do próprio usuário autenticado."
+          }
+        },
+        {
+          "name": "Delete User (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/user/delete",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "user", "delete"]
+            },
+            "description": "Remove usuário. Requer AdminGuard. Rate limit: 3 req / hora."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Role",
+      "item": [
+        {
+          "name": "Create Role (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"admin\",\n  \"description\": \"Administrador do sistema\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/roles/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "roles", "register"]
+            },
+            "description": "Cria papel. Requer AdminGuard."
+          }
+        },
+        {
+          "name": "List Roles (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "roles"]
+            }
+          }
+        },
+        {
+          "name": "Update Role (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"admin\",\n  \"description\": \"Administrador atualizado\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/roles/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "roles", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete Role (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/roles/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "roles", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tag",
+      "item": [
+        {
+          "name": "Create Tag (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Algoritmos\",\n  \"description\": \"Posts sobre algoritmos em grafos\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tag/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tag", "create"]
+            }
+          }
+        },
+        {
+          "name": "Find Tag by Name",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/tag/search/Algoritmos",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tag", "search", "Algoritmos"]
+            }
+          }
+        },
+        {
+          "name": "List Tags",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/tag",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tag"]
+            }
+          }
+        },
+        {
+          "name": "Update Tag (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Algoritmos\",\n  \"description\": \"Descrição atualizada\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tag/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tag", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete Tag (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/tag/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "tag", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Post",
+      "item": [
+        {
+          "name": "List Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "posts"]
+            },
+            "description": "Rota pública. Lista todos os posts."
+          }
+        },
+        {
+          "name": "Create Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Introdução à Teoria dos Grafos\",\n  \"content\": \"Conteúdo do post...\",\n  \"userId\": 1,\n  \"tagIds\": [1]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "posts", "create"]
+            }
+          }
+        },
+        {
+          "name": "Search Posts",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Grafos\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/search",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "posts", "search"]
+            },
+            "description": "Rota pública. Busca posts por filtros no body."
+          }
+        },
+        {
+          "name": "Update Post",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Título atualizado\",\n  \"content\": \"Conteúdo revisado\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "posts", "1"]
+            }
+          }
+        },
+        {
+          "name": "Delete Post",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "posts", "1"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

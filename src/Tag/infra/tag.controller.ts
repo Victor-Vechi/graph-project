@@ -1,8 +1,8 @@
 import { Controller, Post, Get, Put, Delete, Param, Body, UseGuards, Res, HttpStatus } from '@nestjs/common';
 import type { Response } from 'express';
 import { TagService } from '../application/tag.service';
-import { AdminGuard } from '../../Shared/Auth/admin.guard';
-import { JwtAuthGuard } from '../../Shared/Auth/jwt-auth.guard';
+import { AdminGuard } from '../../Shared/Auth/infra/admin.guard';
+import { JwtAuthGuard } from '../../Shared/Auth/infra/jwt-auth.guard';
 
 @Controller('api/tag')
 export class TagController {
