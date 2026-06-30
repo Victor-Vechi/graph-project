@@ -20,6 +20,8 @@ export class UserService {
         email: string;
         password: string;
         idRole: number;
+        searchArea?: string;
+        subjects?: string;
     }): Promise<UserEntity | null> {
         if (!data.email || !data.password || !data.name || !data.idRole) return null;
         if (!this.emailRegex.test(data.email)) return null;
@@ -37,8 +39,8 @@ export class UserService {
             email: data.email,
             password: passwordHash,
             idRole: data.idRole,
-            searchArea: '',
-            subjects: '',
+            searchArea: data.searchArea? data.searchArea : '',
+            subjects: data.subjects? data.subjects : '',
             showUser: false,
             createdAt: new Date(),
             updatedAt: new Date(),
