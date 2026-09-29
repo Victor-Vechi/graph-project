@@ -2,8 +2,9 @@ import { Injectable } from '@nestjs/common';
 import bcrypt from 'bcrypt';
 import { UserRepository } from '../infra/user.repository';
 import { RoleService } from '../../Role/application/role.service';
+import { InstitutionService } from '../../Institution/application/institution.service';
 import { JwtAuthService } from '../../Shared/Auth/application/jwt.service';
-import { UserAdapted, UserEntity, UserShowAdapted } from '../domain/user.entity';
+import { UserAdapted, UserEntity, UserShowAdapted, UserWithInstitution } from '../domain/user.entity';
 
 @Injectable()
 export class UserService {
@@ -12,6 +13,7 @@ export class UserService {
     constructor(
         private readonly userRepository: UserRepository,
         private readonly roleService: RoleService,
+        private readonly institutionService: InstitutionService,
         private readonly jwtAuthService: JwtAuthService,
     ) {}
 
@@ -22,6 +24,7 @@ export class UserService {
         idRole: number;
         searchArea?: string;
         subjects?: string;
+        idInstitution?: number | null;
     }): Promise<UserEntity | null> {
         if (!data.email || !data.password || !data.name || !data.idRole) return null;
         if (!this.emailRegex.test(data.email)) return null;
@@ -30,6 +33,9 @@ export class UserService {
 
         if (await this.userRepository.findByEmail(data.email)) return null;
         if (!await this.roleService.findById(data.idRole)) return null;
+
+        const idInstitution = data.idInstitution ? Number(data.idInstitution) : null;
+        if (idInstitution && !await this.institutionService.findById(idInstitution)) return null;
 
         const salt = await bcrypt.genSalt(12);
         const passwordHash = await bcrypt.hash(data.password, salt);
@@ -42,6 +48,7 @@ export class UserService {
             searchArea: data.searchArea? data.searchArea : '',
             subjects: data.subjects? data.subjects : '',
             showUser: false,
+            idInstitution,
             createdAt: new Date(),
             updatedAt: new Date(),
             active: true,
@@ -91,20 +98,40 @@ export class UserService {
         return user ? this.toAdapted(user) : null;
     }
 
-    async update(data: any): Promise<UserEntity | null> {
-        if (!data.id || !data.name) return null;
+    // asAdmin permite alterar também o vínculo com a instituição (idInstitution nulo desvincula)
+    async update(
+        id: number,
+        data: {
+            name: string;
+            email: string;
+            searchArea?: string;
+            subjects?: string;
+            showUser?: boolean;
+            idInstitution?: number | null;
+        },
+        options: { asAdmin: boolean } = { asAdmin: false },
+    ): Promise<UserEntity | null> {
+        if (!id || !data.name) return null;
         if (!data.email || !this.emailRegex.test(data.email)) return null;
+        if (!await this.userRepository.findById(id)) return null;
 
-        data.email = data.email.toLowerCase();
-        const userByEmail = await this.userRepository.findByEmail(data.email);
-        if (!userByEmail || userByEmail.id.toString() !== data.id.toString()) return null;
+        const email = data.email.toLowerCase();
+        const userByEmail = await this.userRepository.findByEmail(email);
+        if (userByEmail && userByEmail.id !== id) return null;
 
-        return this.userRepository.update(parseInt(data.id), {
+        let idInstitution: number | null | undefined;
+        if (options.asAdmin && data.idInstitution !== undefined) {
+            idInstitution = data.idInstitution ? Number(data.idInstitution) : null;
+            if (idInstitution && !await this.institutionService.findById(idInstitution)) return null;
+        }
+
+        return this.userRepository.update(id, {
             name: data.name,
-            email: data.email,
+            email,
             searchArea: data.searchArea,
             subjects: data.subjects,
             showUser: data.showUser,
+            ...(idInstitution !== undefined && { idInstitution }),
             updatedAt: new Date(),
         });
     }
@@ -114,10 +141,9 @@ export class UserService {
         password: string;
         newPassword: string;
     }): Promise<UserEntity | null> {
-        if (!data.user?.id || !data.user?.email || !data.password || !data.newPassword) return null;
-        if (!this.emailRegex.test(data.user.email)) return null;
+        if (!data.user?.id || !data.password || !data.newPassword) return null;
 
-        const user = await this.userRepository.findByEmail(data.user.email);
+        const user = await this.userRepository.findById(parseInt(data.user.id));
         if (!user) return null;
         if (!await bcrypt.compare(data.password, user.password)) return null;
 
@@ -144,15 +170,19 @@ export class UserService {
             searchArea: user.searchArea,
             showUser: user.showUser,
             idRole: user.idRole,
+            idInstitution: user.idInstitution,
         };
     }
 
-    private toAdaptedShow(user: UserEntity): UserShowAdapted {
+    private toAdaptedShow(user: UserWithInstitution): UserShowAdapted {
         return {
             id: user.id.toString(),
             name: user.name,
             searchArea: user.searchArea,
             subjects: user.subjects,
+            institution: user.institution
+                ? { id: user.institution.id.toString(), name: user.institution.name, acronym: user.institution.acronym }
+                : null,
         };
     }
 }

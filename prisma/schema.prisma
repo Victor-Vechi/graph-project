@@ -49,15 +49,35 @@ model User {
   searchArea  String?
   subjects    String?
   showUser    Boolean @default(true)
+  idInstitution Int?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   active      Boolean  @default(true)
 
   // Relations
-  role  Role?       @relation(fields: [idRole], references: [id])
-  posts Post[]
+  role        Role?        @relation(fields: [idRole], references: [id])
+  institution Institution? @relation(fields: [idInstitution], references: [id])
+  posts       Post[]
+  postLogs    PostLog[]
 
   @@map("users")
+}
+
+model Institution {
+  id        Int     @id @default(autoincrement())
+  name      String  @unique
+  acronym   String?
+  city      String?
+  country   String?
+  website   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  active    Boolean  @default(true)
+
+  // Relations
+  users User[]
+
+  @@map("institutions")
 }
 
 model Post {
@@ -72,6 +92,7 @@ model Post {
   // Relations
   user User?       @relation(fields: [userId], references: [id])
   tags PostTag[]
+  logs PostLog[]
 
   @@map("posts")
 }
@@ -87,4 +108,26 @@ model PostTag {
 
   @@unique([postId, tagId])
   @@map("post_tags")
+}
+
+// Auditoria das notícias: quem criou, editou ou excluiu e o que mudou.
+// postId/userId viram nulos se a notícia ou o usuário forem excluídos; os nomes ficam salvos no log.
+model PostLog {
+  id        Int      @id @default(autoincrement())
+  postId    Int?
+  userId    Int?
+  action    String   // CREATE | UPDATE | DELETE
+  postTitle String
+  userName  String
+  changes   String[] // campos alterados: title, content, tags
+  before    Json?
+  after     Json?
+  createdAt DateTime @default(now())
+
+  post Post? @relation(fields: [postId], references: [id], onDelete: SetNull)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([postId])
+  @@index([userId])
+  @@map("post_logs")
 }

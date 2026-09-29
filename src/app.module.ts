@@ -7,6 +7,8 @@ import { RoleModule } from './Role/role.module';
 import { UserModule } from './User/user.module';
 import { TagModule } from './Tag/tag.module';
 import { PostModule } from './Post/post.module';
+import { InstitutionModule } from './Institution/institution.module';
+import { PostLogModule } from './PostLog/post-log.module';
 
 @Module({
     imports: [
@@ -21,6 +23,8 @@ import { PostModule } from './Post/post.module';
         UserModule,
         TagModule,
         PostModule,
+        InstitutionModule,
+        PostLogModule,
     ],
     providers: [
         {
