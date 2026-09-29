@@ -141,7 +141,21 @@ export class UserController {
     @UseGuards(JwtAuthGuard)
     async update(@CurrentUser() authUser: JwtPayload, @Body() body: any, @Res() res: Response) {
         try {
-            const result = await this.userService.update({ ...body, id: authUser.id });
+            const result = await this.userService.update(parseInt(authUser.id), body);
+            return result
+                ? res.status(HttpStatus.OK).json({ message: 'User updated successfully' })
+                : res.status(HttpStatus.BAD_REQUEST).json({ error: 'Invalid data' });
+        } catch {
+            return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Error updating user' });
+        }
+    }
+
+    // Declarada depois de user/update e user/recover para não capturar essas rotas
+    @Put('user/:id')
+    @UseGuards(AdminGuard)
+    async updateById(@Param('id') id: string, @Body() body: any, @Res() res: Response) {
+        try {
+            const result = await this.userService.update(parseInt(id), body, { asAdmin: true });
             return result
                 ? res.status(HttpStatus.OK).json({ message: 'User updated successfully' })
                 : res.status(HttpStatus.BAD_REQUEST).json({ error: 'Invalid data' });

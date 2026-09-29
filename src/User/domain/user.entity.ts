@@ -7,6 +7,7 @@ export interface UserEntity {
     searchArea: string | null;
     subjects: string | null;
     showUser: boolean;
+    idInstitution: number | null;
     createdAt: Date;
     updatedAt: Date;
     active: boolean;
@@ -20,6 +21,11 @@ export interface UserAdapted {
     searchArea: string | null;
     showUser: boolean;
     idRole: number | null;
+    idInstitution: number | null;
+}
+
+export interface UserWithInstitution extends UserEntity {
+    institution: { id: number; name: string; acronym: string | null } | null;
 }
 
 export interface UserShowAdapted {
@@ -27,4 +33,5 @@ export interface UserShowAdapted {
     name: string;
     searchArea: string | null;
     subjects: string | null;
+    institution: { id: string; name: string; acronym: string | null } | null;
 }
