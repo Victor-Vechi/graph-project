@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { DatabaseModule } from './Shared/Database/database.module';
-import { AuthModule } from './Shared/Auth/auth.module';
-import { RoleModule } from './Role/role.module';
-import { UserModule } from './User/user.module';
-import { TagModule } from './Tag/tag.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { MaterialModule } from './Material/material.module';
 import { PostModule } from './Post/post.module';
+import { RoleModule } from './Role/role.module';
+import { AuthModule } from './Shared/Auth/auth.module';
+import { DatabaseModule } from './Shared/Database/database.module';
+import { TagModule } from './Tag/tag.module';
+import { UserModule } from './User/user.module';
 import { InstitutionModule } from './Institution/institution.module';
 import { PostLogModule } from './PostLog/post-log.module';
 
@@ -23,6 +24,7 @@ import { PostLogModule } from './PostLog/post-log.module';
         UserModule,
         TagModule,
         PostModule,
+        MaterialModule,
         InstitutionModule,
         PostLogModule,
     ],

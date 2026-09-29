@@ -1,5 +1,91 @@
 services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-graph_project}
+      POSTGRES_USER: ${POSTGRES_USER:-graph}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-graph}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - graph-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-graph} -d ${POSTGRES_DB:-graph_project}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  minio:
+    build:
+      context: .
+      dockerfile: docker/minio/Dockerfile
+    image: graph-minio-local
+    container_name: graph-minio
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - graph-minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  minio-init:
+    build:
+      context: .
+      dockerfile: docker/minio/Dockerfile.mc
+    image: graph-minio-mc-local
+    container_name: graph-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+      S3_PUBLIC_BUCKET: ${S3_PUBLIC_BUCKET:-graph-public-media}
+      S3_PRIVATE_BUCKET: ${S3_PRIVATE_BUCKET:-graph-private-materials}
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD; do sleep 1; done;
+      mc mb --ignore-existing local/$$S3_PUBLIC_BUCKET;
+      mc anonymous set download local/$$S3_PUBLIC_BUCKET;
+      mc mb --ignore-existing local/$$S3_PRIVATE_BUCKET;
+      mc anonymous set none local/$$S3_PRIVATE_BUCKET;
+      exit 0;
+      "
+
   app:
     build: .
     ports:
-      - '3000:3000'
+      - "${PORT:-3000}:3000"
+    environment:
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL:-postgresql://graph:graph@db:5432/graph_project?schema=public}
+      SECRET_KEY: ${SECRET_KEY:-local-development-secret-change-me}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_ENDPOINT: http://minio:9000
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://localhost:9000}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin}
+      S3_PUBLIC_BUCKET: ${S3_PUBLIC_BUCKET:-graph-public-media}
+      S3_PRIVATE_BUCKET: ${S3_PRIVATE_BUCKET:-graph-private-materials}
+      S3_FORCE_PATH_STYLE: "true"
+      S3_PRESIGN_TTL_SECONDS: ${S3_PRESIGN_TTL_SECONDS:-900}
+      MAX_IMAGE_UPLOAD_BYTES: ${MAX_IMAGE_UPLOAD_BYTES:-10485760}
+      MAX_MATERIAL_UPLOAD_BYTES: ${MAX_MATERIAL_UPLOAD_BYTES:-104857600}
+    depends_on:
+      db:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+
+volumes:
+  graph-postgres-data:
+  graph-minio-data:
