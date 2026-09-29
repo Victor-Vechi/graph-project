@@ -8,6 +8,8 @@ import { AuthModule } from './Shared/Auth/auth.module';
 import { DatabaseModule } from './Shared/Database/database.module';
 import { TagModule } from './Tag/tag.module';
 import { UserModule } from './User/user.module';
+import { InstitutionModule } from './Institution/institution.module';
+import { PostLogModule } from './PostLog/post-log.module';
 
 @Module({
     imports: [
@@ -23,6 +25,8 @@ import { UserModule } from './User/user.module';
         TagModule,
         PostModule,
         MaterialModule,
+        InstitutionModule,
+        PostLogModule,
     ],
     providers: [
         {

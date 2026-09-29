@@ -20,10 +20,14 @@ import type { JwtPayload } from '../../Shared/Auth/domain/jwt.interface';
 import { JwtAuthGuard } from '../../Shared/Auth/infra/jwt-auth.guard';
 import type { UploadedMediaFile } from '../../Shared/Media/domain/media.entity';
 import { PostService } from '../application/post.service';
+import { PostLogService } from '../../PostLog/application/post-log.service';
 
 @Controller('api/posts')
 export class PostController {
-    constructor(private readonly postService: PostService) {}
+    constructor(
+        private readonly postService: PostService,
+        private readonly postLogService: PostLogService,
+    ) {}
 
     @Get()
     async findAll(@Res() res: Response) {
@@ -46,6 +50,11 @@ export class PostController {
     ) {
         try {
             const post = await this.postService.create(body, parseInt(user.id), cover);
+            if (post) {
+                const postId = parseInt(post.id);
+                const after = await this.postLogService.snapshot(postId);
+                await this.postLogService.register({ action: 'CREATE', postId, user, before: null, after });
+            }
             return post
                 ? res.status(HttpStatus.CREATED).json({ message: 'Post created successfully', post })
                 : res.status(HttpStatus.BAD_REQUEST).json({ error: 'Invalid data' });
@@ -78,7 +87,13 @@ export class PostController {
         @Res() res: Response,
     ) {
         try {
-            const result = await this.postService.update(parseInt(id), body, parseInt(user.id), cover);
+            const postId = parseInt(id);
+            const before = await this.postLogService.snapshot(postId);
+            const result = await this.postService.update(postId, body, parseInt(user.id), cover);
+            if (result) {
+                const after = await this.postLogService.snapshot(postId);
+                await this.postLogService.register({ action: 'UPDATE', postId, user, before, after });
+            }
             return result
                 ? res.status(HttpStatus.OK).json({ message: 'Post updated successfully', post: result })
                 : res.status(HttpStatus.BAD_REQUEST).json({ error: 'Post not found or invalid data' });
@@ -90,9 +105,14 @@ export class PostController {
 
     @Delete('/:id')
     @UseGuards(JwtAuthGuard)
-    async delete(@Param('id') id: string, @Res() res: Response) {
+    async delete(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Res() res: Response) {
         try {
-            const result = await this.postService.delete(parseInt(id));
+            const postId = parseInt(id);
+            const before = await this.postLogService.snapshot(postId);
+            const result = await this.postService.delete(postId);
+            if (result) {
+                await this.postLogService.register({ action: 'DELETE', postId, user, before, after: null });
+            }
             return result
                 ? res.status(HttpStatus.OK).json({ message: 'Post deleted successfully' })
                 : res.status(HttpStatus.BAD_REQUEST).json({ error: 'Post not found' });

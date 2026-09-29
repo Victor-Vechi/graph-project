@@ -57,16 +57,36 @@ model User {
   searchArea    String?
   subjects      String?
   showUser      Boolean      @default(true)
+  idInstitution Int?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   active        Boolean      @default(true)
 
   role          Role?        @relation(fields: [idRole], references: [id])
+  institution   Institution? @relation(fields: [idInstitution], references: [id])
   posts         Post[]
   uploadedMedia MediaAsset[] @relation("MediaUploader")
   materials     Material[]   @relation("MaterialUploader")
+  postLogs      PostLog[]
 
   @@map("users")
+}
+
+model Institution {
+  id        Int     @id @default(autoincrement())
+  name      String  @unique
+  acronym   String?
+  city      String?
+  country   String?
+  website   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  active    Boolean  @default(true)
+
+  // Relations
+  users User[]
+
+  @@map("institutions")
 }
 
 model Post {
@@ -83,6 +103,7 @@ model Post {
   user         User?       @relation(fields: [userId], references: [id])
   coverMedia   MediaAsset? @relation("PostCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
   tags         PostTag[]
+  logs         PostLog[]
 
   @@map("posts")
 }
@@ -138,4 +159,26 @@ model Material {
   uploadedBy   User?        @relation("MaterialUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
 
   @@map("materials")
+}
+
+// Auditoria das notícias: quem criou, editou ou excluiu e o que mudou.
+// postId/userId viram nulos se a notícia ou o usuário forem excluídos; os nomes ficam salvos no log.
+model PostLog {
+  id        Int      @id @default(autoincrement())
+  postId    Int?
+  userId    Int?
+  action    String   // CREATE | UPDATE | DELETE
+  postTitle String
+  userName  String
+  changes   String[] // campos alterados: title, content, tags
+  before    Json?
+  after     Json?
+  createdAt DateTime @default(now())
+
+  post Post? @relation(fields: [postId], references: [id], onDelete: SetNull)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([postId])
+  @@index([userId])
+  @@map("post_logs")
 }

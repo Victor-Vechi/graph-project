@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../Shared/Database/application/prisma.service';
 import { IUserRepository } from '../domain/user-repository.interface';
-import { UserEntity } from '../domain/user.entity';
+import { UserEntity, UserWithInstitution } from '../domain/user.entity';
 
 @Injectable()
 export class UserRepository implements IUserRepository {
@@ -23,8 +23,11 @@ export class UserRepository implements IUserRepository {
         return this.prisma.user.findMany();
     }
 
-    findByShowUserTrue(): Promise<UserEntity[]> {
-        return this.prisma.user.findMany({ where: { showUser: true } });
+    findByShowUserTrue(): Promise<UserWithInstitution[]> {
+        return this.prisma.user.findMany({
+            where: { showUser: true },
+            include: { institution: { select: { id: true, name: true, acronym: true } } },
+        });
     }
 
     update(id: number, data: Partial<UserEntity>): Promise<UserEntity> {
