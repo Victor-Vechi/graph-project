@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,73 +7,88 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Role {
-  id        Int     @id @default(autoincrement())
-  name      String
-  description String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  active    Boolean  @default(true)
+enum MediaVisibility {
+  PUBLIC
+  PRIVATE
+}
 
-  // Relations
+enum MediaKind {
+  IMAGE
+  PDF
+  DOCUMENT
+  PRESENTATION
+  ARCHIVE
+  DATASET
+  OTHER
+}
+
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  active      Boolean  @default(true)
+
   users User[]
 
   @@map("roles")
 }
 
 model Tag {
-  id        Int     @id @default(autoincrement())
-  name      String
+  id          Int      @id @default(autoincrement())
+  name        String
   description String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  active    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  active      Boolean  @default(true)
 
-  // Relations
   posts PostTag[]
 
   @@map("tags")
 }
 
 model User {
-  id          Int     @id @default(autoincrement())
-  name        String
-  email       String  @unique
-  password    String
-  idRole      Int?
-  searchArea  String?
-  subjects    String?
-  showUser    Boolean @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  active      Boolean  @default(true)
+  id            Int          @id @default(autoincrement())
+  name          String
+  email         String       @unique
+  password      String
+  idRole        Int?
+  searchArea    String?
+  subjects      String?
+  showUser      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  active        Boolean      @default(true)
 
-  // Relations
-  role  Role?       @relation(fields: [idRole], references: [id])
-  posts Post[]
+  role          Role?        @relation(fields: [idRole], references: [id])
+  posts         Post[]
+  uploadedMedia MediaAsset[] @relation("MediaUploader")
+  materials     Material[]   @relation("MaterialUploader")
 
   @@map("users")
 }
 
 model Post {
-  id        Int     @id @default(autoincrement())
-  title     String
-  content   String
-  userId    Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  active    Boolean  @default(true)
+  id           Int         @id @default(autoincrement())
+  title        String
+  content      String
+  userId       Int?
+  coverMediaId String?     @unique
+  coverAlt     String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  active       Boolean     @default(true)
 
-  // Relations
-  user User?       @relation(fields: [userId], references: [id])
-  tags PostTag[]
+  user         User?       @relation(fields: [userId], references: [id])
+  coverMedia   MediaAsset? @relation("PostCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+  tags         PostTag[]
 
   @@map("posts")
 }
 
-// Junction table for Post-Tag many-to-many relationship
 model PostTag {
-  id    Int @id @default(autoincrement())
+  id     Int @id @default(autoincrement())
   postId Int
   tagId  Int
 
@@ -87,4 +97,45 @@ model PostTag {
 
   @@unique([postId, tagId])
   @@map("post_tags")
+}
+
+model MediaAsset {
+  id           String          @id @default(cuid())
+  bucket       String
+  storageKey   String          @unique
+  originalName String
+  mimeType     String
+  sizeBytes    BigInt
+  checksum     String?
+  etag         String?
+  kind         MediaKind
+  visibility   MediaVisibility
+  uploadedById Int?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  uploadedBy   User?           @relation("MediaUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  postCover    Post?           @relation("PostCover")
+  material     Material?       @relation("MaterialFile")
+
+  @@map("media_assets")
+}
+
+model Material {
+  id           Int         @id @default(autoincrement())
+  title        String
+  description  String?
+  category     String?
+  year         Int?
+  tags         String[]     @default([])
+  mediaId      String       @unique
+  uploadedById Int?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  active       Boolean      @default(true)
+
+  media        MediaAsset   @relation("MaterialFile", fields: [mediaId], references: [id], onDelete: Restrict)
+  uploadedBy   User?        @relation("MaterialUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@map("materials")
 }
