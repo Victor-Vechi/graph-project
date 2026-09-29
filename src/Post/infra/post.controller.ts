@@ -1,7 +1,25 @@
-import { Controller, Post, Get, Put, Delete, Param, Body, UseGuards, Res, HttpStatus } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpException,
+    HttpStatus,
+    Param,
+    Post,
+    Put,
+    Res,
+    UploadedFile,
+    UseGuards,
+    UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
-import { PostService } from '../application/post.service';
+import { CurrentUser } from '../../Shared/Auth/infra/current-user.decorator';
+import type { JwtPayload } from '../../Shared/Auth/domain/jwt.interface';
 import { JwtAuthGuard } from '../../Shared/Auth/infra/jwt-auth.guard';
+import type { UploadedMediaFile } from '../../Shared/Media/domain/media.entity';
+import { PostService } from '../application/post.service';
 
 @Controller('api/posts')
 export class PostController {
@@ -19,13 +37,20 @@ export class PostController {
 
     @Post('/create')
     @UseGuards(JwtAuthGuard)
-    async create(@Body() body: any, @Res() res: Response) {
+    @UseInterceptors(FileInterceptor('cover', { limits: { fileSize: 10 * 1024 * 1024 } }))
+    async create(
+        @CurrentUser() user: JwtPayload,
+        @Body() body: any,
+        @UploadedFile() cover: UploadedMediaFile | undefined,
+        @Res() res: Response,
+    ) {
         try {
-            const post = await this.postService.create(body);
+            const post = await this.postService.create(body, parseInt(user.id), cover);
             return post
-                ? res.status(HttpStatus.OK).json({ message: 'Post created successfully' })
+                ? res.status(HttpStatus.CREATED).json({ message: 'Post created successfully', post })
                 : res.status(HttpStatus.BAD_REQUEST).json({ error: 'Invalid data' });
-        } catch {
+        } catch (error) {
+            if (error instanceof HttpException) throw error;
             return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Error creating post' });
         }
     }
@@ -44,13 +69,21 @@ export class PostController {
 
     @Put('/:id')
     @UseGuards(JwtAuthGuard)
-    async update(@Param('id') id: string, @Body() body: any, @Res() res: Response) {
+    @UseInterceptors(FileInterceptor('cover', { limits: { fileSize: 10 * 1024 * 1024 } }))
+    async update(
+        @CurrentUser() user: JwtPayload,
+        @Param('id') id: string,
+        @Body() body: any,
+        @UploadedFile() cover: UploadedMediaFile | undefined,
+        @Res() res: Response,
+    ) {
         try {
-            const result = await this.postService.update(parseInt(id), body);
+            const result = await this.postService.update(parseInt(id), body, parseInt(user.id), cover);
             return result
-                ? res.status(HttpStatus.OK).json({ message: 'Post updated successfully' })
-                : res.status(HttpStatus.BAD_REQUEST).json({ error: 'Post not found' });
-        } catch {
+                ? res.status(HttpStatus.OK).json({ message: 'Post updated successfully', post: result })
+                : res.status(HttpStatus.BAD_REQUEST).json({ error: 'Post not found or invalid data' });
+        } catch (error) {
+            if (error instanceof HttpException) throw error;
             return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Error updating post' });
         }
     }
