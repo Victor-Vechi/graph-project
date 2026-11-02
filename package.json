@@ -32,7 +32,8 @@
     "helmet": "^8.0.0",
     "pg": "^8.20.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "sanitize-html": "^2.18.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -40,11 +41,12 @@
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
+    "@types/bcrypt": "^5.0.2",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.10.7",
-    "@types/bcrypt": "^5.0.2",
     "@types/pg": "^8.20.0",
+    "@types/sanitize-html": "^2.16.2",
     "@types/supertest": "^6.0.2",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
@@ -70,8 +72,16 @@
     ],
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.(t|j)s$": [
+        "ts-jest",
+        {
+          "tsconfig": "tsconfig.spec.json"
+        }
+      ]
     },
+    "transformIgnorePatterns": [
+      "/node_modules/(?!(htmlparser2|domhandler|domutils|dom-serializer|domelementtype|entities)/)"
+    ],
     "collectCoverageFrom": [
       "src/**/*.ts",
       "!src/**/*.spec.ts",
