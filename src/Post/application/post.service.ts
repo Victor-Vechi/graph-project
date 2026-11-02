@@ -1,18 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { PostRepository } from '../infra/post.repository';
 import { PostAdapted, PostEntity } from '../domain/post.entity';
+import { hasVisibleText, sanitizeRichText } from '../../Shared/Sanitizer/application/html-sanitizer';
 
 @Injectable()
 export class PostService {
     constructor(private readonly postRepository: PostRepository) {}
 
     async create(data: { title: string; content: string; tags: number[] }): Promise<PostEntity | null> {
-        if (!data.title || !data.content || !data.tags?.length) return null;
+        const content = sanitizeRichText(data.content);
+        if (!data.title || !hasVisibleText(content) || !data.tags?.length) return null;
         if (await this.postRepository.findExactTitle(data.title)) return null;
 
         return this.postRepository.create({
             title: data.title,
-            content: data.content,
+            content,
             tags: data.tags,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -21,12 +23,13 @@ export class PostService {
     }
 
     async update(id: number, data: { title: string; content: string; tags: number[] }): Promise<PostEntity | null> {
-        if (!id || !data.title || !data.content || !data.tags?.length) return null;
+        const content = sanitizeRichText(data.content);
+        if (!id || !data.title || !hasVisibleText(content) || !data.tags?.length) return null;
         if (!await this.postRepository.findById(id)) return null;
 
         return this.postRepository.update(id, {
             title: data.title,
-            content: data.content,
+            content,
             tags: data.tags,
             updatedAt: new Date(),
         });
