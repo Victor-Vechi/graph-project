@@ -9,6 +9,7 @@ import { TagModule } from './Tag/tag.module';
 import { PostModule } from './Post/post.module';
 import { InstitutionModule } from './Institution/institution.module';
 import { PostLogModule } from './PostLog/post-log.module';
+import { StatsModule } from './Stats/stats.module';
 
 @Module({
     imports: [
@@ -25,6 +26,7 @@ import { PostLogModule } from './PostLog/post-log.module';
         PostModule,
         InstitutionModule,
         PostLogModule,
+        StatsModule,
     ],
     providers: [
         {

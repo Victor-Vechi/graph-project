@@ -2,9 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../Shared/Database/application/prisma.service';
 import { IInstitutionRepository } from '../domain/institution-repository.interface';
 import { InstitutionEntity, InstitutionWithCount } from '../domain/institution.entity';
-
-// Pesquisador ativo = usuário ativo e exibido no site (mesmo critério de /user/show)
-const ACTIVE_RESEARCHER = { active: true, showUser: true };
+import { ACTIVE_RESEARCHER } from '../../User/infra/user.filters';
+import { PARTNER_INSTITUTION } from './institution.filters';
 
 @Injectable()
 export class InstitutionRepository implements IInstitutionRepository {
@@ -31,7 +30,7 @@ export class InstitutionRepository implements IInstitutionRepository {
 
     findActiveWithResearchers(): Promise<InstitutionWithCount[]> {
         return this.prisma.institution.findMany({
-            where: { active: true, users: { some: ACTIVE_RESEARCHER } },
+            where: PARTNER_INSTITUTION,
             orderBy: { name: 'asc' },
             include: { _count: { select: { users: { where: ACTIVE_RESEARCHER } } } },
         });
