@@ -12,6 +12,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum MediaVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum MediaKind {
+  IMAGE
+  PDF
+  DOCUMENT
+  PRESENTATION
+  ARCHIVE
+  DATASET
+  OTHER
+}
+
 model Role {
   id        Int     @id @default(autoincrement())
   name      String
@@ -55,10 +70,12 @@ model User {
   active      Boolean  @default(true)
 
   // Relations
-  role        Role?        @relation(fields: [idRole], references: [id])
-  institution Institution? @relation(fields: [idInstitution], references: [id])
-  posts       Post[]
-  postLogs    PostLog[]
+  role          Role?        @relation(fields: [idRole], references: [id])
+  institution   Institution? @relation(fields: [idInstitution], references: [id])
+  posts         Post[]
+  uploadedMedia MediaAsset[] @relation("MediaUploader")
+  materials     Material[]   @relation("MaterialUploader")
+  postLogs      PostLog[]
 
   @@map("users")
 }
@@ -81,18 +98,21 @@ model Institution {
 }
 
 model Post {
-  id        Int     @id @default(autoincrement())
-  title     String
-  content   String
-  userId    Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  active    Boolean  @default(true)
+  id           Int         @id @default(autoincrement())
+  title        String
+  content      String
+  userId       Int?
+  coverMediaId String?     @unique
+  coverAlt     String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  active       Boolean     @default(true)
 
   // Relations
-  user User?       @relation(fields: [userId], references: [id])
-  tags PostTag[]
-  logs PostLog[]
+  user         User?       @relation(fields: [userId], references: [id])
+  coverMedia   MediaAsset? @relation("PostCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+  tags         PostTag[]
+  logs         PostLog[]
 
   @@map("posts")
 }
@@ -108,6 +128,45 @@ model PostTag {
 
   @@unique([postId, tagId])
   @@map("post_tags")
+}
+
+model MediaAsset {
+  id           String          @id @default(cuid())
+  originalName String
+  mimeType     String
+  sizeBytes    BigInt
+  checksum     String?
+  base64Data   String          @db.Text
+  kind         MediaKind
+  visibility   MediaVisibility
+  uploadedById Int?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  uploadedBy   User?           @relation("MediaUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+  postCover    Post?           @relation("PostCover")
+  material     Material?       @relation("MaterialFile")
+
+  @@map("media_assets")
+}
+
+model Material {
+  id           Int        @id @default(autoincrement())
+  title        String
+  description  String?
+  category     String?
+  year         Int?
+  tags         String[]   @default([])
+  mediaId      String     @unique
+  uploadedById Int?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  active       Boolean    @default(true)
+
+  media        MediaAsset @relation("MaterialFile", fields: [mediaId], references: [id], onDelete: Restrict)
+  uploadedBy   User?      @relation("MaterialUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@map("materials")
 }
 
 // Auditoria das notícias: quem criou, editou ou excluiu e o que mudou.
