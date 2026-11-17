@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Put, Delete, Param, Body, UseGuards, Res, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Put, Delete, Param, Body, UseGuards, Res, HttpStatus, HttpException } from '@nestjs/common';
 import type { Response } from 'express';
 import { InstitutionService } from '../application/institution.service';
 import { AdminGuard } from '../../Shared/Auth/infra/admin.guard';
@@ -15,7 +15,8 @@ export class InstitutionController {
             return institution
                 ? res.status(HttpStatus.OK).json({ message: 'Institution registered successfully', institution })
                 : res.status(HttpStatus.BAD_REQUEST).json({ error: 'Invalid data or institution already exists' });
-        } catch {
+        } catch (error) {
+            if (error instanceof HttpException) throw error;
             return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Error registering institution' });
         }
     }
@@ -49,7 +50,8 @@ export class InstitutionController {
             return result
                 ? res.status(HttpStatus.OK).json({ message: 'Institution updated successfully' })
                 : res.status(HttpStatus.BAD_REQUEST).json({ error: 'Invalid data' });
-        } catch {
+        } catch (error) {
+            if (error instanceof HttpException) throw error;
             return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Error updating institution' });
         }
     }

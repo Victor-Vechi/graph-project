@@ -9,12 +9,12 @@ import { PARTNER_INSTITUTION } from './institution.filters';
 export class InstitutionRepository implements IInstitutionRepository {
     constructor(private readonly prisma: PrismaService) {}
 
-    create(data: Omit<InstitutionEntity, 'id'>): Promise<InstitutionEntity> {
+    create(data: Omit<InstitutionEntity, 'id' | 'photoMedia'>): Promise<InstitutionEntity> {
         return this.prisma.institution.create({ data });
     }
 
     findById(id: number): Promise<InstitutionEntity | null> {
-        return this.prisma.institution.findUnique({ where: { id } });
+        return this.prisma.institution.findUnique({ where: { id }, include: { photoMedia: true } });
     }
 
     findByName(name: string): Promise<InstitutionEntity | null> {
@@ -24,7 +24,7 @@ export class InstitutionRepository implements IInstitutionRepository {
     findAll(): Promise<InstitutionWithCount[]> {
         return this.prisma.institution.findMany({
             orderBy: { name: 'asc' },
-            include: { _count: { select: { users: { where: ACTIVE_RESEARCHER } } } },
+            include: { photoMedia: true, _count: { select: { users: { where: ACTIVE_RESEARCHER } } } },
         });
     }
 
@@ -32,11 +32,11 @@ export class InstitutionRepository implements IInstitutionRepository {
         return this.prisma.institution.findMany({
             where: PARTNER_INSTITUTION,
             orderBy: { name: 'asc' },
-            include: { _count: { select: { users: { where: ACTIVE_RESEARCHER } } } },
+            include: { photoMedia: true, _count: { select: { users: { where: ACTIVE_RESEARCHER } } } },
         });
     }
 
-    update(id: number, data: Partial<InstitutionEntity>): Promise<InstitutionEntity> {
+    update(id: number, data: Partial<Omit<InstitutionEntity, 'photoMedia'>>): Promise<InstitutionEntity> {
         return this.prisma.institution.update({ where: { id }, data });
     }
 

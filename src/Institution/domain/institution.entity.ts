@@ -1,3 +1,5 @@
+import { MediaAssetEntity, MediaAssetResponse } from '../../Shared/Media/domain/media.entity';
+
 export interface InstitutionEntity {
     id: number;
     name: string;
@@ -5,6 +7,8 @@ export interface InstitutionEntity {
     city: string | null;
     country: string | null;
     website: string | null;
+    photoMediaId?: string | null;
+    photoMedia?: MediaAssetEntity | null;
     createdAt: Date;
     updatedAt: Date;
     active: boolean;
@@ -22,4 +26,5 @@ export interface InstitutionAdapted {
     country: string | null;
     website: string | null;
     researchersCount: number;
+    photo: MediaAssetResponse | null;
 }
