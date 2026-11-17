@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Put, Delete, Param, Body, UseGuards, Res, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Put, Delete, Param, Body, UseGuards, Res, HttpStatus, HttpException } from '@nestjs/common';
 import type { Response } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { UserService } from '../application/user.service';
@@ -26,7 +26,8 @@ export class UserController {
             return user
                 ? res.status(HttpStatus.OK).json({ message: 'User registered successfully' })
                 : res.status(HttpStatus.BAD_REQUEST).json({ error: 'Invalid data' });
-        } catch {
+        } catch (error) {
+            if (error instanceof HttpException) throw error;
             return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Error registering user' });
         }
     }
@@ -145,7 +146,8 @@ export class UserController {
             return result
                 ? res.status(HttpStatus.OK).json({ message: 'User updated successfully' })
                 : res.status(HttpStatus.BAD_REQUEST).json({ error: 'Invalid data' });
-        } catch {
+        } catch (error) {
+            if (error instanceof HttpException) throw error;
             return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Error updating user' });
         }
     }
@@ -159,7 +161,8 @@ export class UserController {
             return result
                 ? res.status(HttpStatus.OK).json({ message: 'User updated successfully' })
                 : res.status(HttpStatus.BAD_REQUEST).json({ error: 'Invalid data' });
-        } catch {
+        } catch (error) {
+            if (error instanceof HttpException) throw error;
             return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ error: 'Error updating user' });
         }
     }

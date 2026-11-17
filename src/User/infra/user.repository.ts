@@ -7,30 +7,30 @@ import { UserEntity, UserWithInstitution } from '../domain/user.entity';
 export class UserRepository implements IUserRepository {
     constructor(private readonly prisma: PrismaService) {}
 
-    create(data: Omit<UserEntity, 'id'>): Promise<UserEntity> {
+    create(data: Omit<UserEntity, 'id' | 'photoMedia'>): Promise<UserEntity> {
         return this.prisma.user.create({ data });
     }
 
     findById(id: number): Promise<UserEntity | null> {
-        return this.prisma.user.findUnique({ where: { id } });
+        return this.prisma.user.findUnique({ where: { id }, include: { photoMedia: true } });
     }
 
     findByEmail(email: string): Promise<UserEntity | null> {
-        return this.prisma.user.findUnique({ where: { email } });
+        return this.prisma.user.findUnique({ where: { email }, include: { photoMedia: true } });
     }
 
     findAll(): Promise<UserEntity[]> {
-        return this.prisma.user.findMany();
+        return this.prisma.user.findMany({ include: { photoMedia: true } });
     }
 
     findByShowUserTrue(): Promise<UserWithInstitution[]> {
         return this.prisma.user.findMany({
-            where: { showUser: true },
-            include: { institution: { select: { id: true, name: true, acronym: true } } },
+            where: { showUser: true, active: true },
+            include: { photoMedia: true, institution: { select: { id: true, name: true, acronym: true } } },
         });
     }
 
-    update(id: number, data: Partial<UserEntity>): Promise<UserEntity> {
+    update(id: number, data: Partial<Omit<UserEntity, 'photoMedia'>>): Promise<UserEntity> {
         return this.prisma.user.update({ where: { id }, data });
     }
 
