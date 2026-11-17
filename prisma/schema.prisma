@@ -65,6 +65,7 @@ model User {
   subjects    String?
   showUser    Boolean @default(true)
   idInstitution Int?
+  photoMediaId String? @unique
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   active      Boolean  @default(true)
@@ -72,6 +73,7 @@ model User {
   // Relations
   role          Role?        @relation(fields: [idRole], references: [id])
   institution   Institution? @relation(fields: [idInstitution], references: [id])
+  photoMedia    MediaAsset? @relation("UserPhoto", fields: [photoMediaId], references: [id], onDelete: SetNull)
   posts         Post[]
   uploadedMedia MediaAsset[] @relation("MediaUploader")
   materials     Material[]   @relation("MaterialUploader")
@@ -87,12 +89,14 @@ model Institution {
   city      String?
   country   String?
   website   String?
+  photoMediaId String? @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   active    Boolean  @default(true)
 
   // Relations
   users User[]
+  photoMedia MediaAsset? @relation("InstitutionPhoto", fields: [photoMediaId], references: [id], onDelete: SetNull)
 
   @@map("institutions")
 }
@@ -146,6 +150,8 @@ model MediaAsset {
   uploadedBy   User?           @relation("MediaUploader", fields: [uploadedById], references: [id], onDelete: SetNull)
   postCover    Post?           @relation("PostCover")
   material     Material?       @relation("MaterialFile")
+  userPhoto    User?           @relation("UserPhoto")
+  institutionPhoto Institution? @relation("InstitutionPhoto")
 
   @@map("media_assets")
 }
