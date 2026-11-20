@@ -5,6 +5,7 @@ import { RoleService } from '../../Role/application/role.service';
 import { InstitutionService } from '../../Institution/application/institution.service';
 import { JwtAuthService } from '../../Shared/Auth/application/jwt.service';
 import { UserAdapted, UserEntity, UserShowAdapted, UserWithInstitution } from '../domain/user.entity';
+import { PhotoInput, PhotoService } from '../../Shared/Media/application/photo.service';
 
 @Injectable()
 export class UserService {
@@ -15,9 +16,10 @@ export class UserService {
         private readonly roleService: RoleService,
         private readonly institutionService: InstitutionService,
         private readonly jwtAuthService: JwtAuthService,
+        private readonly photoService: PhotoService,
     ) {}
 
-    async create(data: {
+    async create(data: PhotoInput & {
         name: string;
         email: string;
         password: string;
@@ -40,7 +42,7 @@ export class UserService {
         const salt = await bcrypt.genSalt(12);
         const passwordHash = await bcrypt.hash(data.password, salt);
 
-        return this.userRepository.create({
+        return this.photoService.save(data, null, null, photoMediaId => this.userRepository.create({
             name: data.name,
             email: data.email,
             password: passwordHash,
@@ -52,7 +54,8 @@ export class UserService {
             createdAt: new Date(),
             updatedAt: new Date(),
             active: true,
-        });
+            photoMediaId,
+        }));
     }
 
     async login(data: {
@@ -84,6 +87,7 @@ export class UserService {
         if (!user) return null;
 
         await this.userRepository.delete(user.id);
+        await this.photoService.cleanup(user.photoMediaId);
         return { user: this.toAdapted(user), deleted: true };
     }
 
@@ -101,7 +105,7 @@ export class UserService {
     // asAdmin permite alterar também o vínculo com a instituição (idInstitution nulo desvincula)
     async update(
         id: number,
-        data: {
+        data: PhotoInput & {
             name: string;
             email: string;
             searchArea?: string;
@@ -113,7 +117,8 @@ export class UserService {
     ): Promise<UserEntity | null> {
         if (!id || !data.name) return null;
         if (!data.email || !this.emailRegex.test(data.email)) return null;
-        if (!await this.userRepository.findById(id)) return null;
+        const current = await this.userRepository.findById(id);
+        if (!current) return null;
 
         const email = data.email.toLowerCase();
         const userByEmail = await this.userRepository.findByEmail(email);
@@ -125,7 +130,7 @@ export class UserService {
             if (idInstitution && !await this.institutionService.findById(idInstitution)) return null;
         }
 
-        return this.userRepository.update(id, {
+        return this.photoService.save(data, current.photoMediaId, id, photoMediaId => this.userRepository.update(id, {
             name: data.name,
             email,
             searchArea: data.searchArea,
@@ -133,7 +138,8 @@ export class UserService {
             showUser: data.showUser,
             ...(idInstitution !== undefined && { idInstitution }),
             updatedAt: new Date(),
-        });
+            photoMediaId,
+        }));
     }
 
     async updatePassword(data: {
@@ -171,6 +177,7 @@ export class UserService {
             showUser: user.showUser,
             idRole: user.idRole,
             idInstitution: user.idInstitution,
+            photo: this.photoService.toResponse(user.photoMedia, user.name),
         };
     }
 
@@ -183,6 +190,7 @@ export class UserService {
             institution: user.institution
                 ? { id: user.institution.id.toString(), name: user.institution.name, acronym: user.institution.acronym }
                 : null,
+            photo: this.photoService.toResponse(user.photoMedia, user.name),
         };
     }
 }

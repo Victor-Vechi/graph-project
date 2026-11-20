@@ -10,6 +10,8 @@ import { PostModule } from './Post/post.module';
 import { InstitutionModule } from './Institution/institution.module';
 import { PostLogModule } from './PostLog/post-log.module';
 import { StatsModule } from './Stats/stats.module';
+import { MediaModule } from './Shared/Media/media.module';
+import { MaterialModule } from './Material/material.module';
 
 @Module({
     imports: [
@@ -20,6 +22,7 @@ import { StatsModule } from './Stats/stats.module';
         }]),
         DatabaseModule,
         AuthModule,
+        MediaModule,
         RoleModule,
         UserModule,
         TagModule,
@@ -27,6 +30,7 @@ import { StatsModule } from './Stats/stats.module';
         InstitutionModule,
         PostLogModule,
         StatsModule,
+        MaterialModule,
     ],
     providers: [
         {
